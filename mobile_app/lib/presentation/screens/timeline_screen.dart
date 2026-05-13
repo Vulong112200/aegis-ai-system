@@ -23,7 +23,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
       ),
       backgroundColor: AegisTheme.primaryBlack,
       body: Padding(
-        padding: const EdgeInsets.all(AegisTheme.spacingMedium),
+        padding: EdgeInsets.all(AegisTheme.spacingMedium),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,7 +59,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: AegisTheme.spacingLarge),
+              SizedBox(height: AegisTheme.spacingLarge),
 
               // Timeline Events (Placeholder)
               ListView.builder(
@@ -171,7 +171,7 @@ class _TimelineEvent extends StatelessWidget {
                 : AegisTheme.accentRed)
             .withOpacity(0.1),
         borderRadius: AegisTheme.radiusMedium,
-        padding: const EdgeInsets.all(AegisTheme.spacingMedium),
+        padding: EdgeInsets.all(AegisTheme.spacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

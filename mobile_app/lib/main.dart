@@ -19,14 +19,11 @@ class AegisApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Aegis Vision',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const Scaffold(
-        body: Center(
-          child: Text('Aegis System Ready', style: TextStyle(color: Colors.white)),
-        ),
-      ),
-      // TODO: home: const DashboardScreen(),
+      debugShowCheckedModeBanner: false, // Tắt chữ DEBUG xấu xí ở góc
+      theme: AegisTheme.darkTheme,
+      
+      // Kéo màn nhung lên, hiển thị Dashboard thực sự!
+      home: const DashboardScreen(), 
     );
   }
 }

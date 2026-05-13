@@ -20,8 +20,8 @@ class AegisAIApp extends ConsumerWidget {
 
     return MaterialApp(
       title: 'Aegis AI System',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AegisTheme.lightTheme,
+      darkTheme: AegisTheme.darkTheme,
       themeMode: ThemeMode.system,
       home: authService.isLoggedIn ? const DashboardScreen() : const LoginScreen(),
       routes: {
