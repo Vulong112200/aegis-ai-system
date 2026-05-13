@@ -1,0 +1,7 @@
+opencv-python==4.8.1.78
+mediapipe==0.10.7
+insightface==0.7.3
+celery==5.3.4
+redis==5.0.1
+numpy==1.24.3
+Pillow==10.1.0
