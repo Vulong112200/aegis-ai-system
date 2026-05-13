@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     POSSIBLE_MATCH_THRESHOLD: float = 0.65
     MAX_RECOGNITION_ATTEMPTS: int = 5
     COOLDOWN_MINUTES: int = 10
+    
+    SUPABASE_URL: str
+    SUPABASE_KEY: str
 
     class Config:
         env_file = ".env"

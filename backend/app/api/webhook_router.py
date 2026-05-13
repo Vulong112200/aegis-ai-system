@@ -19,6 +19,9 @@ from ai_engine.engine.ai_core import ai_system
 from app.database import SessionLocal
 from app.services.recognition_service import find_matching_person
 
+from app.services.storage_service import upload_snapshot
+from app.models import Person, PersonEmbedding
+
 router = APIRouter()
 
 def process_image_background(camera_id: str, image_bytes: bytes, session_id: str):
@@ -44,14 +47,47 @@ def process_image_background(camera_id: str, image_bytes: bytes, session_id: str
             
             if person:
                 print(f"[{session_id}] 🎯 NHẬN DIỆN THÀNH CÔNG: {person.name} (Tỉ lệ giống: {confidence*100:.1f}%)")
-                # TODO: Ghi log vào bảng RecognitionSession và gửi Push Notification
+                # Nếu là người quen, ta có thể lưu ảnh vào folder 'events'
+                # snapshot_url = upload_snapshot(image_bytes, prefix="events")
             else:
-                print(f"[{session_id}] 👤 NGƯỜI LẠ! (Chưa có khuôn mặt này trong Database)")
-                # TODO: Lưu ảnh người lạ để thêm vào danh sách quản lý
+                # ==========================================
+                # XỬ LÝ KHI PHÁT HIỆN NGƯỜI LẠ (UNKNOWN)
+                # ==========================================
+                print(f"[{session_id}] 👤 NGƯỜI LẠ! Đang lưu thông tin lên Cloud...")
+                
+                # Bước A: Upload ảnh lên Supabase Storage
+                snapshot_url = upload_snapshot(image_bytes, prefix="unknown")
+                
+                if snapshot_url:
+                    # Bước B: Tạo hồ sơ Người Lạ trong bảng persons
+                    unknown_name = f"Unknown_{session_id[:8]}"
+                    new_unknown = Person(
+                        name=unknown_name,
+                        is_unknown=True
+                    )
+                    db.add(new_unknown)
+                    db.commit()
+                    db.refresh(new_unknown)
+
+                    # Bước C: Lưu Vector và Link Ảnh vào bảng person_embeddings
+                    new_embedding = PersonEmbedding(
+                        person_id=new_unknown.id,
+                        embedding=embedding.tolist(),
+                        quality_score=quality["blur_score"],
+                        snapshot_url=snapshot_url
+                    )
+                    db.add(new_embedding)
+                    db.commit()
+
+                    print(f"[{session_id}] ✅ Đã lưu người lạ: {unknown_name}")
+                    print(f"[{session_id}] 🔗 Link ảnh: {snapshot_url}")
+                else:
+                    print(f"[{session_id}] ❌ Lỗi upload ảnh lên Cloud, bỏ qua lưu DB.")
+                
         except Exception as e:
             print(f"[{session_id}] ❌ Lỗi Database: {str(e)}")
+            db.rollback()
         finally:
-            # Đóng kết nối DB cực kỳ quan trọng để không treo Server
             db.close()
     else:
         print(f"[{session_id}] ⚠️ {msg}")
