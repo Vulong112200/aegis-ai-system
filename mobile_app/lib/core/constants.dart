@@ -31,3 +31,12 @@ class AegisAIApp extends ConsumerWidget {
     );
   }
 }
+
+class AppConstants {
+  // TODO: Thay IP này bằng IPv4 của máy tính bạn (ví dụ: 192.168.1.x)
+  // Nếu dùng máy ảo Android (Emulator), dùng: 10.0.2.2
+  // Nếu dùng iOS Simulator hoặc test trực tiếp trên Web, dùng: 127.0.0.1
+  static const String baseUrl = 'http://10.0.2.2:8000/api/v1'; 
+  
+  static const String appName = 'Aegis Vision';
+}
