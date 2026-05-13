@@ -162,14 +162,18 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Thêm import này
 import '../../core/theme.dart';
 import '../widgets/glass_camera_card.dart';
-
-class DashboardScreen extends StatelessWidget {
+import '../../viewmodels/camera_provider.dart'; // Import Provider vừa tạo
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Lắng nghe API: Nó sẽ tự động re-build UI khi API gọi xong
+    final cameraState = ref.watch(cameraListProvider);
+
     return Scaffold(
       backgroundColor: AegisTheme.secondaryBlack,
       body: SafeArea(
@@ -180,22 +184,15 @@ class DashboardScreen extends StatelessWidget {
             children: [
               const SizedBox(height: AegisTheme.spacingMedium),
               
-              // Header Greeting
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Welcome back,',
-                        style: AegisTheme.bodyMuted,
-                      ),
+                      const Text('Welcome back,', style: AegisTheme.bodyMuted),
                       const SizedBox(height: 4),
-                      Text(
-                        'Hà Phi Vũ',
-                        style: AegisTheme.headlineSmall.copyWith(fontSize: 28),
-                      ),
+                      Text('Hà Phi Vũ', style: AegisTheme.headlineSmall.copyWith(fontSize: 28)),
                     ],
                   ),
                   CircleAvatar(
@@ -208,7 +205,6 @@ class DashboardScreen extends StatelessWidget {
               
               const SizedBox(height: AegisTheme.spacingLarge),
               
-              // Tab Title
               Row(
                 children: [
                   const Icon(Icons.videocam_rounded, color: AegisTheme.textWhite, size: 20),
@@ -216,9 +212,7 @@ class DashboardScreen extends StatelessWidget {
                   Text(
                     'ACTIVE CAMERAS',
                     style: AegisTheme.bodyMuted.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      color: AegisTheme.textWhite,
+                      fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AegisTheme.textWhite,
                     ),
                   ),
                 ],
@@ -226,26 +220,39 @@ class DashboardScreen extends StatelessWidget {
               
               const SizedBox(height: AegisTheme.spacingMedium),
 
-              // Danh sách Camera
+              // UI THAY ĐỔI THEO TRẠNG THÁI API
               Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  children: const [
-                    GlassCameraCard(
-                      cameraName: 'Front Door Camera',
-                      room: 'ENTRANCE',
-                      status: 'ONLINE',
-                      // Ảnh demo nội thất để test hiệu ứng kính mờ
-                      imageUrl: 'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?q=80&w=1000&auto=format&fit=crop',
-                    ),
-                    GlassCameraCard(
-                      cameraName: 'Living Room Cam',
-                      room: 'LIVING ROOM',
-                      status: 'ONLINE',
-                      // Ảnh demo nội thất 2
-                      imageUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop',
-                    ),
-                  ],
+                child: cameraState.when(
+                  // 1. Trạng thái Đang tải
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: AegisTheme.accentBlue),
+                  ),
+                  // 2. Trạng thái Lỗi
+                  error: (error, stack) => Center(
+                    child: Text(error.toString(), style: const TextStyle(color: AegisTheme.accentRed)),
+                  ),
+                  // 3. Trạng thái Thành công (Có Data)
+                  data: (cameras) {
+                    if (cameras.isEmpty) {
+                      return const Center(
+                        child: Text("Chưa có camera nào trong hệ thống.", style: AegisTheme.bodyMuted),
+                      );
+                    }
+                    
+                    return ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: cameras.length,
+                      itemBuilder: (context, index) {
+                        final cam = cameras[index];
+                        return GlassCameraCard(
+                          cameraName: cam.name,
+                          room: cam.room,
+                          status: cam.status,
+                          imageUrl: cam.latestSnapshotUrl,
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],

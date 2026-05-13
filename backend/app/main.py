@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
 from sqlalchemy import text
-from app.api import webhook_router # <-- THÊM DÒNG NÀY
-from app.api import person_router #
+from app.api import webhook_router, person_router
+from app.api import camera_router # <-- THÊM DÒNG NÀY
 
 # IMPORTANT: Ensure the pgvector extension is created in Supabase BEFORE creating tables
 with engine.connect() as connection:
@@ -42,3 +42,4 @@ def health_check():
 # TODO: Include routers here (e.g., app.include_router(auth_router.router))
 app.include_router(webhook_router.router, prefix="/api", tags=["Webhooks"])
 app.include_router(person_router.router, prefix="/api", tags=["Persons"])
+app.include_router(camera_router.router, prefix="/api", tags=["Cameras"]) #

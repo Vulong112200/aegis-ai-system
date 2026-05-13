@@ -1,31 +1,51 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..models import Camera
-from ..schemas import CameraCreate, Camera
+from pydantic import BaseModel
+from typing import List
+
+from app.database import get_db
+from app.models import Camera
 
 router = APIRouter()
 
-@router.get("/", response_model=list[Camera])
-def get_cameras(db: Session = Depends(get_db)):
+# Schema để validate dữ liệu đầu vào khi tạo Camera
+class CameraCreate(BaseModel):
+    name: str
+    room: str
+    stream_url: str = ""
+
+@router.get("/v1/cameras")
+def get_all_cameras(db: Session = Depends(get_db)):
+    """API lấy danh sách toàn bộ Camera của hệ thống"""
     cameras = db.query(Camera).all()
-    return cameras
+    
+    result = []
+    for cam in cameras:
+        result.append({
+            "id": str(cam.id),
+            "name": cam.name,
+            "room": cam.room,
+            "status": cam.status,
+            "mode": cam.mode,
+            # Tạm thời trả về ảnh demo, sau này sẽ query lấy snapshot mới nhất từ bảng recognition_sessions
+            "latest_snapshot_url": "https://images.unsplash.com/photo-1558036117-15d82a90b9b1?q=80&w=1000&auto=format&fit=crop"
+        })
+        
+    return {"status": "success", "data": result}
 
-@router.post("/", response_model=Camera)
-def create_camera(camera: CameraCreate, db: Session = Depends(get_db)):
-    db_camera = Camera(**camera.dict())
-    db.add(db_camera)
-    db.commit()
-    db.refresh(db_camera)
-    return db_camera
-
-@router.put("/{camera_id}", response_model=Camera)
-def update_camera(camera_id: str, camera: CameraCreate, db: Session = Depends(get_db)):
-    db_camera = db.query(Camera).filter(Camera.id == camera_id).first()
-    if not db_camera:
-        raise HTTPException(status_code=404, detail="Camera not found")
-    for key, value in camera.dict().items():
-        setattr(db_camera, key, value)
-    db.commit()
-    db.refresh(db_camera)
-    return db_camera
+@router.post("/v1/cameras")
+def add_new_camera(payload: CameraCreate, db: Session = Depends(get_db)):
+    """API để đăng ký một Camera mới vào hệ thống"""
+    try:
+        new_cam = Camera(
+            name=payload.name,
+            room=payload.room,
+            stream_url=payload.stream_url
+        )
+        db.add(new_cam)
+        db.commit()
+        db.refresh(new_cam)
+        return {"status": "success", "data": {"id": str(new_cam.id), "name": new_cam.name}}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
