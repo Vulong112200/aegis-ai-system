@@ -1,54 +1,25 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database (using Supabase or local)
-  db:
-    image: postgres:15
+  api:
+    build: .
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
     environment:
-      POSTGRES_DB: aegis_db
-      POSTGRES_USER: aegis_user
-      POSTGRES_PASSWORD: aegis_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  # Redis for Message Queue and Caching
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
-  # FastAPI Backend
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+      - DATABASE_URL=${SUPABASE_DB_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      # Optimize OpenCV & ONNX for low memory environments
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://aegis_user:aegis_password@db:5432/aegis_db
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - ./backend:/app
+    deploy:
+      resources:
+        limits:
+          memory: 512M # Render Free Tier strict limit
 
-  # AI Engine Worker
-  ai_worker:
-    build:
-      context: ./ai_engine
-      dockerfile: Dockerfile
+  worker:
+    build: .
+    command: celery -A worker.app worker --loglevel=info --concurrency=1
     environment:
-      - DATABASE_URL=postgresql://aegis_user:aegis_password@db:5432/aegis_db
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - db
-      - redis
-      - backend
-    volumes:
-      - ./ai_engine:/app
-
-volumes:
-  postgres_data:
+      - DATABASE_URL=${SUPABASE_DB_URL}
+      - REDIS_URL=${REDIS_URL}
